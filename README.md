@@ -2,12 +2,31 @@
 
 NOTE : This is a prototype. The work is in progress.
 
+<br />
+
 ### MODULE : OMEROImporter
 
 #### User Interface (UI)
 
+<br />
+
 ![](UI-Screenshot.png)
 
+<br />
+
+### How to install ?
+
+1. Click on Code and Download zip.
+2. Unzip the folder in your computer.
+3. Open 3D slicer and go to the modules drop down.
+4. Select the category Developer tools and select Extension wizard.
+5. Click on Select Extension and find the unziped extension folder.
+6. Go in the folder and click on select folder.
+7. You can find the module in modules drown down.
+
+Reference : [Example Installation Instructions](https://www.youtube.com/watch?v=QsxzjQb05D4&t=106s)
+
+<br />
 
 ### HOW it Works ?
 
