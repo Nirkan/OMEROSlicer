@@ -30,7 +30,7 @@ Reference : [Example Installation Instructions](https://www.youtube.com/watch?v=
 
 ### How it Works ?
 
-OMEROImporter uses python api to read the pixel data from OMERO with the help of UI form submitted by user.
+OMEROImporter uses python api to read the pixel data from OMERO with the help of the UI form submitted by user.
 
 1. Select the dropdown and find OMERO in the list.
 2. Click on the OMEROImporter.
