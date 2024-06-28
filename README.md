@@ -22,7 +22,7 @@ NOTE : This is a prototype. The work is in progress.
 4. Select the category Developer tools and select Extension wizard.
 5. Click on Select Extension and find the unziped extension folder.
 6. Go in the folder and click on select folder.
-7. You can find the module in modules drown down.
+7. You can find the module in modules drop down.
 
 Reference : [Example Installation Instructions](https://www.youtube.com/watch?v=QsxzjQb05D4&t=106s)
 
