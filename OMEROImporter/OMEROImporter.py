@@ -1,6 +1,7 @@
 import logging
 import os
 from typing import Annotated, Optional
+from collections import OrderedDict
 
 import vtk
 
@@ -51,7 +52,7 @@ class OMEROImporter(ScriptedLoadableModule):
         # TODO: set categories (folders where the module shows up in the module selector)
         self.parent.categories = [translate("qSlicerAbstractCoreModule", "OMERO")]
         self.parent.dependencies = []  # TODO: add here list of module names that this module requires
-        self.parent.contributors = ["Niraj Kandpal (University of)"]  # TODO: replace with "Firstname Lastname (Organization)"
+        self.parent.contributors = ["Niraj Kandpal (University of Cologne)"]  # TODO: replace with "Firstname Lastname (Organization)"
         # TODO: update with short description of the module and a link to online module documentation
         # _() function marks text as translatable to other languages
         self.parent.helpText = _("""This is an extension to read data from OMERO into 3D Slicer.""")
@@ -59,18 +60,14 @@ class OMEROImporter(ScriptedLoadableModule):
         self.parent.acknowledgementText = _(""" NFDI4Bioimage """)
 
    
-
-
-
-
 #
 # OMEROImporterParameterNode
 #
 
-
 #
 # OMEROImporterWidget
 #
+
 
 class OMEROImporterWidget(ScriptedLoadableModuleWidget):
 
@@ -95,9 +92,14 @@ class OMEROImporterWidget(ScriptedLoadableModuleWidget):
         try:
             self.conn = BlitzGateway(username, password, host=server, port=port)
             self.conn.connect()
-            logging.info("Connected to OMERO server")
-            slicer.util.infoDisplay("Connected to OMERO server")
+            if self.conn.connect() == True:
+                logging.info("Connected to OMERO server")
+                slicer.util.infoDisplay("Connected to OMERO server")
+            else:
+                logging.info("Could not connect to OMERO server")
+                slicer.util.infoDisplay("Could not Connect to OMERO.")
         except Exception as e:
+            logging.error(f"Failed to connect to OMERO server: {e}")
             slicer.util.errorDisplay(f"Failed to connect to OMERO server: {e}")
 
 
@@ -105,54 +107,47 @@ class OMEROImporterWidget(ScriptedLoadableModuleWidget):
         imageId = int(self.ui.imageIdEdit.text)
         
         try:
-            image, pixels = self.fetch_image_from_omero(imageId)
+            # Get the image
+            image = self.conn.getObject("Image", imageId)
+            if not image:
+                raise Exception(f"Image with ID {imageId} not found")
             
-            # Get pixel data
-            size_z = image.getSizeZ()
-            size_y = image.getSizeY()
-            size_x = image.getSizeX()
-            size_c = image.getSizeC()
+            imageName = image.getName()
+            print(f"Image Name: {imageName}")
             
-            # Dispaly information while data is being read. Large data long waiting time.
-            slicer.util.infoDisplay("Reading and downloading image. Might take some time.")
+            # Get the imported files
+            imported_files = image.getImportedImageFiles()
+            if not imported_files:
+                raise Exception("No imported files found for this image")
+                
+            # Get the first imported file (usually the original .nrrd)
+            original_file = next(imported_files)
+                
+            # Create a temporary file path
+            temp_nrrd_path = f"{imageName}"
+            print(f"Temporary file path: {temp_nrrd_path}")
             
-            z_stack = np.zeros((size_z, size_y, size_x), dtype=np.uint16)
-
-            # For 3D image only with 0 channels and 0 time points.    
-            for z in range(size_z):
-                  plane = pixels.getPlane(z, 0, 0)  # z, c, t
-                  z_stack[z, :, :] = plane
-            
-            
-            # Create volume node
-            volumeNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLScalarVolumeNode')
-            volumeNode.SetName(f"OMEROImage_{image.getId()}")
-
-            
-            # Set image data from numpy array.
-            slicer.util.updateVolumeFromArray(volumeNode, z_stack)
-            
-            # Set origin to center the volume in the viewer
-            volumeNode.SetOrigin(0, 0, 0)
-    
-    	    # Set spacing
-            #volumeNode.SetSpacing(1.0,1.0,1.0)
-            
-            # Display the volume.
-            slicer.util.setSliceViewerLayers(background=volumeNode)
-            
-
-            logging.info("Imported 3D image from OMERO")
+            # Download the file
+            print(f"Downloading original file to {temp_nrrd_path}...")
+            with open(temp_nrrd_path, 'wb') as f:
+                for chunk in original_file.getFileInChunks():
+                    f.write(chunk)
+        
+            # Load the file in Slicer
+            print("Loading file in Slicer...")
+            volumeNode = slicer.util.loadVolume(temp_nrrd_path)
+            volumeNode.SetName(f"{imageName}")
+        
+            # Clean up the temporary file
+            print("Cleaning up temporary file...")
+            os.remove(temp_nrrd_path)
+        
+            print("Done!")
+            return volumeNode
+        
         except Exception as e:
             slicer.util.errorDisplay(f"Failed to import image: {e}")
-
-    def fetch_image_from_omero(self, imageId):
-        # Fetch image and pixels from OMERO
-        image = self.conn.getObject("Image", imageId)
-        pixels = image.getPrimaryPixels()
-        #pixels = self.conn.getObject("Pixels", pixels.getId())
-        
-        return image, pixels
+            return
 
 class OMEROImporterLogic(ScriptedLoadableModuleLogic):
     pass
